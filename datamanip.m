@@ -8,8 +8,8 @@ close all; clear all;
 
 data = readtable('data/test_repositories.csv');
 
-data.Properties
-data.Properties.VariableNames
+data.Properties;
+data.Properties.VariableNames;
 
 % data.Properties.VariableUnits = {   'string',   ... name
 %                                     'string',   ... description
@@ -40,14 +40,36 @@ data.Properties.VariableNames
 topics = data.Topics;
 % class(data.Watchers)
 
-columns_of_interest = ["Name", "Description", "CreatedAt", "CreatedAt", "Homepage"];
+columns_of_interest = [ "Name", "Description", "Homepage", "CreatedAt", "UpdatedAt", "Size", ...
+                        "Stars", "Forks", "Issues", "Watchers" ...
+                        "Language", "HasIssues", "HasProjects", "HasDownloads", "HasWiki", "HasPages", "HasDiscussions"];
 
-
+% Update types for each column of interest
 data.Name = cellfun(@string, data.Name);
 data.Description = cellfun(@string, data.Description);
+data.CreatedAt = cellfun(@(c)datetime(c, "InputFormat","uuuu-MM-dd'T'HH:mm:ssZ", TimeZone="UTC"), data.CreatedAt);
+data.UpdatedAt = cellfun(@(c)datetime(c, "InputFormat","uuuu-MM-dd'T'HH:mm:ssZ", TimeZone="UTC"), data.UpdatedAt);
 data.Homepage = cellfun(@length, data.Homepage) > 0;
-data.CreatedAt = cellfun(@(input)datetime(c, 'Format','yyyy-MM-dd''T''HH:mm:ssZ'), data.CreatedAt);
+% Doesn't need to update size, stars, forks, or watchers
 data.Language = cellfun(@string, data.Language);
+data.Topics = cellfun(@string, data.Topics);
 data.HasIssues = cellfun(@(c)strcmp(c, 'True'), data.HasIssues);
+data.HasProjects = cellfun(@(c)strcmp(c, 'True'), data.HasProjects);
+data.HasDownloads = cellfun(@(c)strcmp(c, 'True'), data.HasDownloads);
+data.HasWiki = cellfun(@(c)strcmp(c, 'True'), data.HasWiki);
+data.HasPages = cellfun(@(c)strcmp(c, 'True'), data.HasPages);
+data.HasDiscussions = cellfun(@(c)strcmp(c, 'True'), data.HasDiscussions);
 
-data.CreatedAt
+% Parse out Topics
+data.Topics = arrayfun(@parse_tags, data.Topics, 'un', false);
+
+
+
+function tags = parse_tags(tag_string)
+    string_split = cellfun(@string, split(tag_string, "'"));
+    keep_inds = ~cellfun(@(c)contains(c,","), string_split);
+    keep_inds(1) = 0;
+    keep_inds(end) = 0;
+    tags = string_split(keep_inds);
+end
+
