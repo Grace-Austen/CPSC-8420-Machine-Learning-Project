@@ -1,27 +1,29 @@
 % Lasso 
-
 rng default;
 
 points = 1000;
-X1 = linspace(0, 100, points)';
-X2 = linspace(80, 100, points)';
-X3 = linspace(90, 150, points)';
-X4 = linspace(0, 250, points)';
+X1 = 100 .* rand(points,1);
+X2 = 100 .* rand(points,1);
+X3 = 100 .* rand(points,1);
+X4 = 100 .* rand(points,1);
 
 drift = randn(points, 1);
 
 y = (X1+(drift.*20)).*5 + (X2+drift.*8) + (X3+drift.*80)./80 + 800;
 X = [ones(size(X1)) X1 X2 X3 X4];
 
-r1 = lasso_regression(X, y, lambda=1)
-r2 = lasso_regression(X, y, lambda=10)
-r3 = lasso_regression(X, y, lambda=100)
-r4 = lasso_regression(X, y, lambda=1000)
+X'*X\X'*y
+r0 = lasso_regression(X, y, lambda=0, threshold=10e-5)
+r1 = lasso_regression(X, y, lambda=1, threshold=10e-5)
+r2 = lasso_regression(X, y, lambda=10, threshold=10e-5)
+r3 = lasso_regression(X, y, lambda=100, threshold=10e-5)
+r4 = lasso_regression(X, y, lambda=1000, threshold=10e-5)
+r5 = lasso_regression(X, y, lambda=10e4, threshold=10e-5)
 
-rmse(X*r1, y)
-rmse(X*r2, y)
-rmse(X*r3, y)
-rmse(X*r4, y)
+% rmse(X*r1, y)
+% rmse(X*r2, y)
+% rmse(X*r3, y)
+% rmse(X*r4, y)
 
 B = lasso(X, y);
 B(:,1)

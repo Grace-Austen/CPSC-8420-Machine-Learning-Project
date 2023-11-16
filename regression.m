@@ -14,10 +14,10 @@ rng default;
 % gradient_descent_regression(A, y1, threshold=0)
 
 points = 1000;
-X1 = linspace(0, 100, points)';
-X2 = linspace(80, 100, points)';
-X3 = linspace(90, 150, points)';
-X4 = linspace(0, 250, points)';
+X1 = 100 .* rand(points,1);
+X2 = 100 .* rand(points,1);
+X3 = 100 .* rand(points,1);
+X4 = 100 .* rand(points,1);
 
 drift = randn(points, 1);
 
@@ -25,7 +25,7 @@ y2 = (X1+(drift.*20)).*5 + (X2+drift.*8) + (X3+drift.*80)./80 + 800;
 X = [ones(size(X1)) X1 X2 X3 X4];
 
 r1 = closed_form_regression(X, y2)
-r2 = gradient_descent_regression(X, y2, threshold=0)
+r2 = gradient_descent_regression(X, y2, threshold=10e-6)
 
 rmse(X*r1, y2)
 rmse(X*r2, y2)
