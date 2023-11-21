@@ -63,6 +63,9 @@ data.HasDiscussions = cellfun(@(c)strcmp(c, 'True'), data.HasDiscussions);
 % Parse out Topics
 data.Topics = arrayfun(@parse_tags, data.Topics, 'un', false);
 
+% Create one-hot encoding of names and descriptions
+one_hot_name = create_one_hot(data.Name, '-');
+
 
 
 function tags = parse_tags(tag_string)
@@ -71,5 +74,34 @@ function tags = parse_tags(tag_string)
     keep_inds(1) = 0;
     keep_inds(end) = 0;
     tags = string_split(keep_inds);
+end
+
+function one_hot = create_one_hot(strings, delimiter)
+    terms = containers.Map();
+    % Loop through each string
+    for i = 1:height(strings)
+        if exist('delimiter', 'var')
+            term_split = split(strings{i}, delimiter);
+        else
+            term_split = split(strings{i});
+        end
+    
+        % add all terms
+        for j = 1:length(term_split)
+            terms(term_split{j}) = 1;
+        end
+    end
+    
+    one_hot = zeros(size(strings,1), size(terms,1));
+    
+    % for every string, add 1 if it contains term
+    for i=1:size(strings,1)
+        if exist('delimiter', 'var')
+            term_split = split(strings{i}, delimiter);
+        else
+            term_split = split(strings{i});
+        end
+        one_hot(i, :) = contains(keys(terms), term_split);
+    end
 end
 
