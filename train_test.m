@@ -5,54 +5,150 @@
 % I couldn't figure out how imports work so I'm copy/pasting regression and
 % lasso functions into here
 
-close all; clear all;
-
 %% Creating dummy data for testing
-points = 1000;
-X1 = 100 .* rand(points,1);
-X2 = 100 .* rand(points,1);
-X3 = 100 .* rand(points,1);
-X4 = 100 .* rand(points,1);
+% points = 1000;
+% X1 = 100 .* rand(points,1);
+% X2 = 100 .* rand(points,1);
+% X3 = 100 .* rand(points,1);
+% X4 = 100 .* rand(points,1);
+% 
+% drift = randn(points, 1);
+% 
+% y2 = (X1+(drift.*20)).*5 + (X2+drift.*8) + (X3+drift.*80)./80 + 800;
+% X = [ones(size(X1)) X1 X2 X3 X4];
 
-drift = randn(points, 1);
+%% Creating X and y data from file for testing 
+data = readtable('data/repositories.csv');
 
-y2 = (X1+(drift.*20)).*5 + (X2+drift.*8) + (X3+drift.*80)./80 + 800;
-X = [ones(size(X1)) X1 X2 X3 X4];
+% Update types for each column of interest
+data.Homepage = cellfun(@length, data.Homepage) > 0;
+% Doesn't need to update size, stars, forks, or watchers
+data.HasIssues = cellfun(@(c)strcmp(c, 'True'), data.HasIssues);
+data.HasProjects = cellfun(@(c)strcmp(c, 'True'), data.HasProjects);
+data.HasDownloads = cellfun(@(c)strcmp(c, 'True'), data.HasDownloads);
+data.HasWiki = cellfun(@(c)strcmp(c, 'True'), data.HasWiki);
+data.HasPages = cellfun(@(c)strcmp(c, 'True'), data.HasPages);
+data.HasDiscussions = cellfun(@(c)strcmp(c, 'True'), data.HasDiscussions);
 
+X = [data.Homepage data.Size data.HasIssues data.HasProjects data.HasDownloads data.HasWiki data.HasPages data.HasDiscussions];
+X = normalize(X);
+stars = data.Stars;
+forks = data.Forks;
+issues = data.Issues;
+watchers = data.Watchers;
+y = [stars forks issues watchers];
 %% split data
 
-[trainX trainy testX testy] = split_data(X, y2);
+[trainX, trainy, testX, testy] = split_data(X, y);
+train_stars = trainy(:,1);
+test_stars = testy(:,1);
+train_forks = trainy(:,2);
+test_forks = testy(:,2);
+train_issues = trainy(:,3);
+test_issues = testy(:,3);
+train_watchers = trainy(:,4);
+test_watchers = testy(:,4);
 
-% train using lassoAlg.m or regression.m
-weights_cf_reg = closed_form_regression(trainX, trainy);
+%% train using lassoAlg.m or regression.m
+weights_cf_reg_stars = closed_form_regression(trainX, train_stars);
+weights_cf_reg_forks = closed_form_regression(trainX, train_forks);
+weights_cf_reg_issues = closed_form_regression(trainX, train_issues);
+weights_cf_reg_watchers = closed_form_regression(trainX, train_watchers);
 
 lambdas = [0 logspace(-10, 10, 10)];
-lasso_weights = zeros(size(trainX, 2), length(lambdas));
+lasso_weights_stars = zeros(size(trainX, 2), length(lambdas));
+lasso_weights_forks = zeros(size(trainX, 2), length(lambdas));
+lasso_weights_issues = zeros(size(trainX, 2), length(lambdas));
+lasso_weights_watchers = zeros(size(trainX, 2), length(lambdas));
 for i=1:length(lambdas)
     i
-    W = lasso_regression(trainX, trainy, lambda=lambdas(i), threshold=10e-5);
-    lasso_weights(:,i) = W;
+    lasso_weights_stars(:,i) = lasso_regression(trainX, train_stars, lambda=lambdas(i), threshold=10e-5);
+    lasso_weights_forks(:,i) = lasso_regression(trainX, train_forks, lambda=lambdas(i), threshold=10e-5);
+    lasso_weights_issues(:,i) = lasso_regression(trainX, train_issues, lambda=lambdas(i), threshold=10e-5);
+    lasso_weights_watchers(:,i) = lasso_regression(trainX, train_watchers, lambda=lambdas(i), threshold=10e-5);
 end
 
 %% test
-rmse(trainX*weights_cf_reg, trainy)
-rmse(testX*weights_cf_reg, testy)
+stars_train_rmse = rmse(trainX*weights_cf_reg_stars, train_stars);
+stars_test_rmse = rmse(testX*weights_cf_reg_stars, test_stars);
+forks_train_rmse = rmse(trainX*weights_cf_reg_forks, train_forks);
+forks_test_rmse = rmse(testX*weights_cf_reg_forks, test_forks);
+issues_train_rmse = rmse(trainX*weights_cf_reg_issues, train_issues);
+issues_test_rmse = rmse(testX*weights_cf_reg_issues, test_issues);
+watchers_train_rmse = rmse(trainX*weights_cf_reg_watchers, train_watchers);
+watchers_test_rmse = rmse(testX*weights_cf_reg_watchers, test_watchers);
 
-lasso_train_rmses = zeros(size(lambdas));
-lasso_test_rmses = zeros(size(lambdas));
+stars_lasso_train_rmses = zeros(size(lambdas));
+stars_lasso_test_rmses = zeros(size(lambdas));
+forks_lasso_train_rmses = zeros(size(lambdas));
+forks_lasso_test_rmses = zeros(size(lambdas));
+issues_lasso_train_rmses = zeros(size(lambdas));
+issues_lasso_test_rmses = zeros(size(lambdas));
+watchers_lasso_train_rmses = zeros(size(lambdas));
+watchers_lasso_test_rmses = zeros(size(lambdas));
 for i=1:length(lambdas)
-    lasso_train_rmses(i) = rmse(trainX*lasso_weights(:,i), trainy);
-    lasso_test_rmses(i) = rmse(testX*lasso_weights(:,i), testy);
+    stars_lasso_train_rmses(i) = rmse(trainX*lasso_weights_stars(:,i), train_stars);
+    stars_lasso_test_rmses(i) = rmse(testX*lasso_weights_stars(:,i), test_stars);
+    forks_lasso_train_rmses(i) = rmse(trainX*lasso_weights_forks(:,i), train_forks);
+    forks_lasso_test_rmses(i) = rmse(testX*lasso_weights_forks(:,i), test_forks);
+    issues_lasso_train_rmses(i) = rmse(trainX*lasso_weights_issues(:,i), train_issues);
+    issues_lasso_test_rmses(i) = rmse(testX*lasso_weights_issues(:,i), test_issues);
+    watchers_lasso_train_rmses(i) = rmse(trainX*lasso_weights_watchers(:,i), train_watchers);
+    watchers_lasso_test_rmses(i) = rmse(testX*lasso_weights_watchers(:,i), test_watchers);
 end
 
-figure
-loglog(lambdas, lasso_train_rmses,"DisplayName","Train RMSE","LineWidth", 1.5)
+linear_figure = figure;
+subplot(141)
+bar(["Train", "Test"], [stars_train_rmse, stars_test_rmse])
+title("RMSE for Stars")
+subplot(142)
+bar(["Train", "Test"], [forks_train_rmse, forks_test_rmse])
+title("RMSE for Forks")
+subplot(143)
+bar(["Train", "Test"], [issues_train_rmse, issues_test_rmse])
+title("RMSE for Issues")
+subplot(144)
+bar(["Train", "Test"], [watchers_train_rmse, watchers_test_rmse])
+title("RMSE for Watchers")
+
+linear_figure.Position = [0 0 1250 300]; 
+
+lasso_figure = figure;
+subplot(141)
+loglog(lambdas, stars_lasso_train_rmses,"DisplayName","Train RMSE","LineWidth", 1.5)
 hold on
-loglog(lambdas, lasso_test_rmses,"DisplayName","Test RMSE","LineWidth", 1.5)
-title('RMSE vs Lambda')
+loglog(lambdas, stars_lasso_test_rmses,"DisplayName","Test RMSE","LineWidth", 1.5)
+title('Star RMSE vs Lambda')
 xlabel('Log Lambda')
 ylabel('RMSE')
 legend()
+subplot(142)
+loglog(lambdas, forks_lasso_train_rmses,"DisplayName","Train RMSE","LineWidth", 1.5)
+hold on
+loglog(lambdas, forks_lasso_test_rmses,"DisplayName","Test RMSE","LineWidth", 1.5)
+title('Forks RMSE vs Lambda')
+xlabel('Log Lambda')
+ylabel('RMSE')
+legend()
+subplot(143)
+loglog(lambdas, issues_lasso_train_rmses,"DisplayName","Train RMSE","LineWidth", 1.5)
+hold on
+loglog(lambdas, issues_lasso_test_rmses,"DisplayName","Test RMSE","LineWidth", 1.5)
+title('Issues RMSE vs Lambda')
+xlabel('Log Lambda')
+ylabel('RMSE')
+legend()
+subplot(144)
+loglog(lambdas, watchers_lasso_train_rmses,"DisplayName","Train RMSE","LineWidth", 1.5)
+hold on
+loglog(lambdas, watchers_lasso_test_rmses,"DisplayName","Test RMSE","LineWidth", 1.5)
+title('Watchers RMSE vs Lambda', FontSize=9.5)
+xlabel('Log Lambda')
+ylabel('RMSE')
+legend()
+
+lasso_figure.Position = [0 0 1500 300]; 
+
 
 
 %% Functions
@@ -63,7 +159,7 @@ function [trainX trainy testX testy] = split_data(X, y, varargin)
     default_random_seed = 1;
 
     addRequired(p, 'X', @ismatrix);
-    addRequired(p, 'y', @isvector);
+    addRequired(p, 'y', @ismatrix);
     addParameter(p, 'train_percent', default_train_percent, @real);
     addParameter(p, 'random_seed', default_random_seed, @isnumeric);
 
