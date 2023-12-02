@@ -76,15 +76,17 @@ disp("Finished Parsing Topics");
 tot_time = toc;
 disp(['Total Time: ', num2str(tot_time), ' sec.']);
 
-% Create one-hot encoding of names and descriptions
+% Create one-hot encoding of Names
 [one_hot_name, terms_name] = create_one_hot(data.Name, '-');
-[one_hot_lang, terms_lang] = create_one_hot(data.Language, '-');
-arr_terms_lang = keys(terms_lang);
 
+% Create one-hot encoding of Language
+[one_hot_lang, terms_lang] = create_one_hot(data.Language, '-');
+
+% Process and create one-hot encoding of Description
 descripts_table = process_descript(data);
 one_hot_descript = create_one_hot_descript(descripts_table, data);
-disp(one_hot_descript);
 
+% Process and create one-hot encoding of Topic
 topic_table = process_topic(data);
 one_hot_topic = create_one_hot_topic(topic_table, data);
 
@@ -131,6 +133,11 @@ function [one_hot, terms] = create_one_hot(strings, delimiter)
         one_hot(i, :) = contains(keys(terms), term_split);
     end
 end
+
+
+% % % % % % % %
+% Description %
+% % % % % % % % 
 
 % Process Description Column 
 %   - removal of stop words
@@ -200,6 +207,10 @@ end
 % % % % %
 % Topic %
 % % % % % 
+
+% Process Topics Column 
+%   - removal of stop words
+%   - returns list of individual topic words
 function topic_table = process_topic(data)
     topic_count = containers.Map();
     
@@ -227,7 +238,7 @@ function topic_table = process_topic(data)
 end
 
 
-% One-Hot Enconding for Description 
+% One-Hot Enconding for Topics 
 function one_hot_topic = create_one_hot_topic(topic, data)
     one_hot_topic = false(height(data), numel(topic));
 
