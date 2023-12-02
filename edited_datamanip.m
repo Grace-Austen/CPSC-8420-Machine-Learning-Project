@@ -58,21 +58,36 @@ columns_of_interest = [ "Name", "Description", "Homepage", "CreatedAt", "Updated
 
 % Update types for each column of interest
 data.Name = cellfun(@string, data.Name);
+disp("Finished updating name");
 data.Description = cellfun(@string, data.Description, UniformOutput=false);
+disp("Finished updating description");
 data.CreatedAt = cellfun(@(c)datetime(c, "InputFormat","uuuu-MM-dd'T'HH:mm:ssZ", TimeZone="UTC"), data.CreatedAt);
+disp("Finished updating createdat");
 data.UpdatedAt = cellfun(@(c)datetime(c, "InputFormat","uuuu-MM-dd'T'HH:mm:ssZ", TimeZone="UTC"), data.UpdatedAt);
+disp("Finished updating updatedat");
 data.CreatedAt = arrayfun(@(c)convertTo(c, "datenum"), data.CreatedAt);
+disp("Finished updating createdat to datenum");
 data.UpdatedAt = arrayfun(@(c)convertTo(c, "datenum"), data.UpdatedAt);
+disp("Finished updating updatedat to datenum");
 data.Homepage = cellfun(@length, data.Homepage) > 0;
+disp("Finished updating homepage");
 % Doesn't need to update size, stars, forks, issues, or watchers
 data.Language = cellfun(@string, data.Language);
+disp("Finished updating language");
 data.Topics = cellfun(@string, data.Topics);
+disp("Finished updating topics");
 data.HasIssues = cellfun(@(c)strcmp(c, 'True'), data.HasIssues);
+disp("Finished updating hasissues");
 data.HasProjects = cellfun(@(c)strcmp(c, 'True'), data.HasProjects);
+disp("Finished updating hasprojects");
 data.HasDownloads = cellfun(@(c)strcmp(c, 'True'), data.HasDownloads);
+disp("Finished updating hasdownloads");
 data.HasWiki = cellfun(@(c)strcmp(c, 'True'), data.HasWiki);
+disp("Finished updating haswiki");
 data.HasPages = cellfun(@(c)strcmp(c, 'True'), data.HasPages);
+disp("Finished updating haspages");
 data.HasDiscussions = cellfun(@(c)strcmp(c, 'True'), data.HasDiscussions);
+disp("Finished updating hasdiscussions");
 
 disp("Finished updating types");
 
