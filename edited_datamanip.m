@@ -76,15 +76,19 @@ disp("Finished Parsing Topics");
 tot_time = toc;
 disp(['Total Time: ', num2str(tot_time), ' sec.']);
 
-% Create one-hot encoding of names and descriptions
+% Create one-hot encoding of Names
 [one_hot_name, terms_name] = create_one_hot(data.Name, '-');
-% [process_descript, terms_descript] = create_one_hot(data.Description, '-');
 
-% arr_terms_name = keys(terms_name);
-% arr_terms_descript = keys(terms_descript);
+% Create one-hot encoding of Language
+[one_hot_lang, terms_lang] = create_one_hot(data.Language, '-');
+
+% Process and create one-hot encoding of Description
 descripts_table = process_descript(data);
 one_hot_descript = create_one_hot_descript(descripts_table, data);
-disp(one_hot_descript);
+
+% Process and create one-hot encoding of Topic
+topic_table = process_topic(data);
+one_hot_topic = create_one_hot_topic(topic_table, data);
 
 
 function tags = parse_tags(tag_string)
@@ -99,6 +103,9 @@ function [one_hot, terms] = create_one_hot(strings, delimiter)
     terms = containers.Map();
     % Loop through each string
     for i = 1:height(strings)
+        if isempty(strings{i})
+            continue;
+        end
         if exist('delimiter', 'var')
             term_split = split(strings{i}, delimiter);
         else
@@ -115,6 +122,9 @@ function [one_hot, terms] = create_one_hot(strings, delimiter)
     
     % for every string, add 1 if it contains term
     for i=1:size(strings,1)
+        if isempty(strings{i})
+            continue;
+        end
         if exist('delimiter', 'var')
             term_split = split(strings{i}, delimiter);
         else
@@ -123,6 +133,11 @@ function [one_hot, terms] = create_one_hot(strings, delimiter)
         one_hot(i, :) = contains(keys(terms), term_split);
     end
 end
+
+
+% % % % % % % %
+% Description %
+% % % % % % % % 
 
 % Process Description Column 
 %   - removal of stop words
@@ -184,6 +199,60 @@ function one_hot_descript = create_one_hot_descript(descripts, data)
 
             if ~isempty(word_idx)
                 one_hot_descript(i, word_idx) = true;
+            end
+        end
+    end
+end
+
+% % % % %
+% Topic %
+% % % % % 
+
+% Process Topics Column 
+%   - removal of stop words
+%   - returns list of individual topic words
+function topic_table = process_topic(data)
+    topic_count = containers.Map();
+    
+    % Loop each row in the Topics col.
+    for i = 1:height(data)
+        curr_descript = split(data.Topics{i});
+    
+        % Loop through each descript in the Topics row
+        for j = 1:length(curr_descript)
+            curr_topic = curr_descript{j};
+            % Check if key already exists
+            if isKey(topic_count, curr_topic)
+                topic_count(curr_topic) = topic_count(curr_topic) + 1;
+            else
+                topic_count(curr_topic) = 1;
+            end
+        end
+    end
+    
+    % Convert map to table and sort
+    topic_table = table(keys(topic_count)', values(topic_count)', 'VariableNames', {'Topics', 'Count'});
+    topic_table = sortrows(topic_table, 'Count', 'descend');
+    topic_table = topic_table{:, 1};
+    disp(topic_table);
+end
+
+
+% One-Hot Enconding for Topics 
+function one_hot_topic = create_one_hot_topic(topic, data)
+    one_hot_topic = false(height(data), numel(topic));
+
+    for i = 1:height(data)
+        temp_topic = split(data.Topics{i});
+
+        for j = 1:length(temp_topic)
+            curr_topic = temp_topic{j};
+
+            % Check if the word is in topic
+            word_idx = find(strcmp(topic, curr_topic));
+
+            if ~isempty(word_idx)
+                one_hot_topic(i, word_idx) = true;
             end
         end
     end
