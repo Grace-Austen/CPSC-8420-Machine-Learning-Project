@@ -1,14 +1,23 @@
-close all; clear all;
+function []=edited_datamanip(varargin)
 
-% opts = detectImportOptions("data/test_repositories.csv");
-% opts.VariableTypes = "string";
-% R = readtable("data/test_repositories.csv", opts);
+% Parse args
+p = inputParser;
+
+default_fin = "data\test_repositories.csv";
+default_fout = "data\data.mat";
+
+addOptional(p, 'fin', default_fin);
+addOptional(p, 'fout', default_fout);
+
+parse(p, varargin{:});
+
+fin = p.Results.fin;
+fout = p.Results.fout;
 
 tic;
 
-data = readtable('data/test_repositories.csv');
+data = readtable(fin);
 
-% data = readtable('repositories.csv', Range = 'A2:X1001');
 % data.Properties.VariableNames = {'Name', 'Description', 'URL', 'CreatedAt', 'UpdatedAt', 'Homepage', 'Size', 'Stars', 'Forks', 'Issues', 'Watchers', 'Language', 'License', 'Topics', ...
 %     'HasIssues', 'HasProjects', 'HasDownloads', 'HasWiki', 'HasPages', 'HasDiscussions', 'IsFork', 'IsArchived', 'IsTemplate', 'DefaultBranch'};
 
@@ -43,9 +52,6 @@ data.Properties.VariableNames;
 %                                     'string',   ... default branch
 %                                     };
 
-topics = data.Topics;
-% class(data.Watchers)
-
 columns_of_interest = [ "Name", "Description", "Homepage", "CreatedAt", "UpdatedAt", "Size", ...
                         "Stars", "Forks", "Issues", "Watchers" ...
                         "Language", "HasIssues", "HasProjects", "HasDownloads", "HasWiki", "HasPages", "HasDiscussions"];
@@ -55,8 +61,10 @@ data.Name = cellfun(@string, data.Name);
 data.Description = cellfun(@string, data.Description);
 data.CreatedAt = cellfun(@(c)datetime(c, "InputFormat","uuuu-MM-dd'T'HH:mm:ssZ", TimeZone="UTC"), data.CreatedAt);
 data.UpdatedAt = cellfun(@(c)datetime(c, "InputFormat","uuuu-MM-dd'T'HH:mm:ssZ", TimeZone="UTC"), data.UpdatedAt);
+data.CreatedAt = arrayfun(@(c)convertTo(c, "datenum"), data.CreatedAt);
+data.UpdatedAt = arrayfun(@(c)convertTo(c, "datenum"), data.UpdatedAt);
 data.Homepage = cellfun(@length, data.Homepage) > 0;
-% Doesn't need to update size, stars, forks, or watchers
+% Doesn't need to update size, stars, forks, issues, or watchers
 data.Language = cellfun(@string, data.Language);
 data.Topics = cellfun(@string, data.Topics);
 data.HasIssues = cellfun(@(c)strcmp(c, 'True'), data.HasIssues);
@@ -65,7 +73,6 @@ data.HasDownloads = cellfun(@(c)strcmp(c, 'True'), data.HasDownloads);
 data.HasWiki = cellfun(@(c)strcmp(c, 'True'), data.HasWiki);
 data.HasPages = cellfun(@(c)strcmp(c, 'True'), data.HasPages);
 data.HasDiscussions = cellfun(@(c)strcmp(c, 'True'), data.HasDiscussions);
-
 
 disp("Finished updating types");
 
@@ -79,17 +86,36 @@ disp(['Total Time: ', num2str(tot_time), ' sec.']);
 % Create one-hot encoding of Names
 [one_hot_name, terms_name] = create_one_hot(data.Name, '-');
 
-% Create one-hot encoding of Language
-[one_hot_lang, terms_lang] = create_one_hot(data.Language, '-');
-
 % Process and create one-hot encoding of Description
 descripts_table = process_descript(data);
 one_hot_descript = create_one_hot_descript(descripts_table, data);
 
+% Create one-hot encoding of Language
+[one_hot_lang, terms_lang] = create_one_hot(data.Language, '-', 10);
+
 % Process and create one-hot encoding of Topic
 topic_table = process_topic(data);
+topic_table = topic_table(1:10);
 one_hot_topic = create_one_hot_topic(topic_table, data);
 
+
+other_data = [data.CreatedAt data.UpdatedAt data.Size data.Homepage one_hot_lang one_hot_topic ...
+    data.HasIssues data.HasProjects data.HasDownloads data.HasWiki data.HasPages data.HasDiscussions];
+indicator_data = [data.Stars, data.Forks, data.Issues, data.Watchers];
+
+name_features = string(terms_name');
+descript_features = string(descripts_table);
+other_features = ["CreatedAt", "UpdatedAt", "Size", string(terms_lang)', string(topic_table)', ...
+    "HasIssues", "HasProjects", "HasDownloads", "HasWiki", "HasPages", "HasDiscussions"];
+indicator_features = ["Stars", "Forks", "Issues", "Watchers"];
+
+save(fout, "one_hot_name", "one_hot_descript", "other_data", "indicator_data", ...
+    "name_features", "descript_features", "other_features", "indicator_features", '-mat');
+
+end
+
+
+%% Helper Functions
 
 function tags = parse_tags(tag_string)
     string_split = cellfun(@string, split(tag_string, "'"));
@@ -99,7 +125,7 @@ function tags = parse_tags(tag_string)
     tags = string_split(keep_inds);
 end
 
-function [one_hot, terms] = create_one_hot(strings, delimiter)
+function [one_hot, terms] = create_one_hot(strings, delimiter, one_hot_word_limit)
     terms = containers.Map();
     % Loop through each string
     for i = 1:height(strings)
@@ -113,12 +139,24 @@ function [one_hot, terms] = create_one_hot(strings, delimiter)
         end
     
         % add all terms
+        
         for j = 1:length(term_split)
-            terms(term_split{j}) = 1;
+            if isKey(terms, term_split{j})
+                terms(term_split{j}) = terms(term_split{j}) + 1;
+            else
+                terms(term_split{j}) = 1;
+            end
         end
     end
-    
-    one_hot = zeros(size(strings,1), size(terms,1));
+
+    if exist('one_hot_word_limit', 'var')
+        tbl = table(keys(terms)', values(terms)', 'VariableNames', {'Terms', 'Count'});
+        tbl = sortrows(tbl, 'Count', 'descend');
+        terms = tbl{1:one_hot_word_limit,1};
+    else
+        terms = keys(terms);
+    end
+    one_hot = false(size(strings,1), length(terms));
     
     % for every string, add 1 if it contains term
     for i=1:size(strings,1)
@@ -130,7 +168,7 @@ function [one_hot, terms] = create_one_hot(strings, delimiter)
         else
             term_split = split(strings{i});
         end
-        one_hot(i, :) = contains(keys(terms), term_split);
+        one_hot(i, :) = contains(terms, term_split);
     end
 end
 

@@ -7,4 +7,4 @@
 #PBS -j oe
 
 module load matlab/2022a
-matlab -batch "datamanip"
+matlab matlab -r "edited_datamanip(fin='data/repositories.csv') ; exit"
