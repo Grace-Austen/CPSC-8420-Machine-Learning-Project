@@ -6,8 +6,8 @@ p = inputParser;
 default_fin = "data\test_repositories.csv";
 default_fout = "data\data.mat";
 
-addOptional(p, 'fin', default_fin);
-addOptional(p, 'fout', default_fout);
+addOptional(p, 'fin', default_fin, @mustBeFile);
+addOptional(p, 'fout', default_fout, @mustBeFile);
 
 parse(p, varargin{:});
 
@@ -58,7 +58,7 @@ columns_of_interest = [ "Name", "Description", "Homepage", "CreatedAt", "Updated
 
 % Update types for each column of interest
 data.Name = cellfun(@string, data.Name);
-data.Description = cellfun(@string, data.Description);
+data.Description = cellfun(@string, data.Description, UniformOutput=false);
 data.CreatedAt = cellfun(@(c)datetime(c, "InputFormat","uuuu-MM-dd'T'HH:mm:ssZ", TimeZone="UTC"), data.CreatedAt);
 data.UpdatedAt = cellfun(@(c)datetime(c, "InputFormat","uuuu-MM-dd'T'HH:mm:ssZ", TimeZone="UTC"), data.UpdatedAt);
 data.CreatedAt = arrayfun(@(c)convertTo(c, "datenum"), data.CreatedAt);
