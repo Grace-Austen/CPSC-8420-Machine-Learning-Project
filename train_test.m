@@ -31,7 +31,9 @@ data.HasPages = cellfun(@(c)strcmp(c, 'True'), data.HasPages);
 data.HasDiscussions = cellfun(@(c)strcmp(c, 'True'), data.HasDiscussions);
 
 X = [data.Homepage data.Size data.HasIssues data.HasProjects data.HasDownloads data.HasWiki data.HasPages data.HasDiscussions];
-X = normalize(X);
+X = zscore(X);
+X = [ones(height(X),1) X];
+
 stars = data.Stars;
 forks = data.Forks;
 issues = data.Issues;
@@ -76,7 +78,7 @@ forks_test_rmse = rmse(testX*weights_cf_reg_forks, test_forks);
 issues_train_rmse = rmse(trainX*weights_cf_reg_issues, train_issues);
 issues_test_rmse = rmse(testX*weights_cf_reg_issues, test_issues);
 watchers_train_rmse = rmse(trainX*weights_cf_reg_watchers, train_watchers);
-watchers_test_rmse = rmse(testX*weights_cf_reg_watchers, test_watchers);
+watchers_test_rmse = rmse(testX*weights_cf_reg_watchers, test_watchers, "omitnan");
 
 stars_lasso_train_rmses = zeros(size(lambdas));
 stars_lasso_test_rmses = zeros(size(lambdas));
