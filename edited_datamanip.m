@@ -4,7 +4,7 @@ function []=edited_datamanip(varargin)
 p = inputParser;
 
 default_fin = "data\test_repositories.csv";
-default_fout = "data\data.mat";
+default_fout = "data\test_data.mat";
 
 addOptional(p, 'fin', default_fin, @mustBeFile);
 addOptional(p, 'fout', default_fout, @mustBeText);
@@ -52,9 +52,9 @@ data.Properties.VariableNames;
 %                                     'string',   ... default branch
 %                                     };
 
-columns_of_interest = [ "Name", "Description", "Homepage", "CreatedAt", "UpdatedAt", "Size", ...
-                        "Stars", "Forks", "Issues", "Watchers" ...
-                        "Language", "HasIssues", "HasProjects", "HasDownloads", "HasWiki", "HasPages", "HasDiscussions"];
+% columns_of_interest = [ "Name", "Description", "Homepage", "CreatedAt", "UpdatedAt", "Size", ...
+%                         "Stars", "Forks", "Issues", "Watchers" ...
+%                         "Language", "HasIssues", "HasProjects", "HasDownloads", "HasWiki", "HasPages", "HasDiscussions"];
 
 % Update types for each column of interest
 % data.Name = cellfun(@string, data.Name);
@@ -108,15 +108,6 @@ save(temp_data_path, "data", "-mat");
 tot_time = toc;
 disp(['Total Time: ', num2str(tot_time), ' sec.']);
 
-% Create one-hot encoding of Names
-[one_hot_name, terms_name] = create_one_hot(data.Name, '-');
-disp("Finished creating one hot of names");
-
-% Process and create one-hot encoding of Description
-descripts_table = process_descript(data);
-one_hot_descript = create_one_hot_descript(descripts_table, data);
-disp("Finished creating one hot of descriptions");
-
 % Create one-hot encoding of Language
 [one_hot_lang, terms_lang] = create_one_hot(data.Language, '-', 10);
 disp("Finished creating one hot of language");
@@ -129,16 +120,57 @@ disp("Finished creating one hot of topics");
 
 other_data = [data.CreatedAt data.UpdatedAt data.Size data.Homepage one_hot_lang one_hot_topic ...
     data.HasIssues data.HasProjects data.HasDownloads data.HasWiki data.HasPages data.HasDiscussions];
-indicator_data = [data.Stars, data.Forks, data.Issues, data.Watchers];
+indicator_data = [data.Stars, data.Forks, data.Issues];
 
-name_features = string(terms_name');
-descript_features = string(descripts_table);
 other_features = ["CreatedAt", "UpdatedAt", "Size", string(terms_lang)', string(topic_table)', ...
     "HasIssues", "HasProjects", "HasDownloads", "HasWiki", "HasPages", "HasDiscussions"];
-indicator_features = ["Stars", "Forks", "Issues", "Watchers"];
+indicator_features = ["Stars", "Forks", "Issues"];
 
-save(fout, "one_hot_name", "one_hot_descript", "other_data", "indicator_data", ...
-    "name_features", "descript_features", "other_features", "indicator_features", '-mat');
+temp_data_split = split(fout, ".")';
+l_temp_data = length(temp_data_split);
+if l_temp_data > 1
+    temp_data_split(l_temp_data-1) = compose("%s_other", temp_data_split(l_temp_data-1));
+else
+    temp_data_split(l_temp_data) = compose("%s_other", temp_data_split(l_temp_data));
+end
+out_data_path = join(temp_data_split, ".");
+save(out_data_path, "other_data", "indicator_data", "other_features", "indicator_features", "-mat");
+
+% Create one-hot encoding of Names
+[one_hot_name, terms_name] = create_one_hot(data.Name, '-');
+disp("Finished creating one hot of names");
+
+name_features = string(terms_name');
+
+temp_data_split = split(fout, ".")';
+l_temp_data = length(temp_data_split);
+if l_temp_data > 1
+    temp_data_split(l_temp_data-1) = compose("%s_name", temp_data_split(l_temp_data-1));
+else
+    temp_data_split(l_temp_data) = compose("%s_name", temp_data_split(l_temp_data));
+end
+name_data_path = join(temp_data_split, ".");
+save(name_data_path, "one_hot_name", "name_features", '-mat');
+
+% Process and create one-hot encoding of Description
+descripts_table = process_descript(data);
+one_hot_descript = create_one_hot_descript(descripts_table, data);
+disp("Finished creating one hot of descriptions");
+
+descript_features = string(descripts_table);
+
+temp_data_split = split(fout, ".")';
+l_temp_data = length(temp_data_split);
+if l_temp_data > 1
+    temp_data_split(l_temp_data-1) = compose("%s_descript", temp_data_split(l_temp_data-1));
+else
+    temp_data_split(l_temp_data) = compose("%s_descript", temp_data_split(l_temp_data));
+end
+descript_data_path = join(temp_data_split, ".");
+save(descript_data_path, "one_hot_descript", "descript_features", '-mat');
+
+% save(fout, "one_hot_name", "one_hot_descript", "other_data", "indicator_data", ...
+%     "name_features", "descript_features", "other_features", "indicator_features", '-mat');
 
 disp(compose("Saved fully processed data to %s", fout));
 
