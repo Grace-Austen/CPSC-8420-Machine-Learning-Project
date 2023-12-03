@@ -57,10 +57,10 @@ columns_of_interest = [ "Name", "Description", "Homepage", "CreatedAt", "Updated
                         "Language", "HasIssues", "HasProjects", "HasDownloads", "HasWiki", "HasPages", "HasDiscussions"];
 
 % Update types for each column of interest
-data.Name = cellfun(@string, data.Name);
-disp("Finished updating name");
-data.Description = cellfun(@string, data.Description);
-disp("Finished updating description");
+% data.Name = cellfun(@string, data.Name);
+% disp("Finished updating name");
+% data.Description = cellfun(@string, data.Description);
+% disp("Finished updating description");
 data.CreatedAt = cellfun(@(c)datetime(c, "InputFormat","uuuu-MM-dd'T'HH:mm:ssZ", TimeZone="UTC"), data.CreatedAt);
 disp("Finished updating createdat");
 data.UpdatedAt = cellfun(@(c)datetime(c, "InputFormat","uuuu-MM-dd'T'HH:mm:ssZ", TimeZone="UTC"), data.UpdatedAt);
@@ -72,10 +72,10 @@ disp("Finished updating updatedat to datenum");
 data.Homepage = cellfun(@length, data.Homepage) > 0;
 disp("Finished updating homepage");
 % Doesn't need to update size, stars, forks, issues, or watchers
-data.Language = cellfun(@string, data.Language);
-disp("Finished updating language");
-data.Topics = cellfun(@string, data.Topics);
-disp("Finished updating topics");
+% data.Language = cellfun(@string, data.Language);
+% disp("Finished updating language");
+% data.Topics = cellfun(@string, data.Topics);
+% disp("Finished updating topics");
 data.HasIssues = cellfun(@(c)strcmp(c, 'True'), data.HasIssues);
 disp("Finished updating hasissues");
 data.HasProjects = cellfun(@(c)strcmp(c, 'True'), data.HasProjects);
@@ -91,30 +91,41 @@ disp("Finished updating hasdiscussions");
 
 disp("Finished updating types");
 
-save(comp("temp_%s", fout), "data", "-mat");
-
 % Parse out Topics
 data.Topics = arrayfun(@parse_tags, data.Topics, 'un', false);
 disp("Finished Parsing Topics");
+
+temp_data_split = split(fout, ".")';
+l_temp_data = length(temp_data_split);
+if l_temp_data > 1
+    temp_data_split(l_temp_data-1) = compose("%s_temp", temp_data_split(l_temp_data-1));
+else
+    temp_data_split(l_temp_data) = compose("%s_temp", temp_data_split(l_temp_data));
+end
+temp_data_path = join(temp_data_split, ".");
+save(temp_data_path, "data", "-mat");
 
 tot_time = toc;
 disp(['Total Time: ', num2str(tot_time), ' sec.']);
 
 % Create one-hot encoding of Names
 [one_hot_name, terms_name] = create_one_hot(data.Name, '-');
+disp("Finished creating one hot of names");
 
 % Process and create one-hot encoding of Description
 descripts_table = process_descript(data);
 one_hot_descript = create_one_hot_descript(descripts_table, data);
+disp("Finished creating one hot of descriptions");
 
 % Create one-hot encoding of Language
 [one_hot_lang, terms_lang] = create_one_hot(data.Language, '-', 10);
+disp("Finished creating one hot of language");
 
 % Process and create one-hot encoding of Topic
 topic_table = process_topic(data);
 topic_table = topic_table(1:10);
 one_hot_topic = create_one_hot_topic(topic_table, data);
-
+disp("Finished creating one hot of topics");
 
 other_data = [data.CreatedAt data.UpdatedAt data.Size data.Homepage one_hot_lang one_hot_topic ...
     data.HasIssues data.HasProjects data.HasDownloads data.HasWiki data.HasPages data.HasDiscussions];
@@ -128,6 +139,8 @@ indicator_features = ["Stars", "Forks", "Issues", "Watchers"];
 
 save(fout, "one_hot_name", "one_hot_descript", "other_data", "indicator_data", ...
     "name_features", "descript_features", "other_features", "indicator_features", '-mat');
+
+disp(compose("Saved fully processed data to %s", fout));
 
 end
 
@@ -235,7 +248,7 @@ function descripts_table = process_descript(data)
     descripts_table = table(keys(descript_count)', values(descript_count)', 'VariableNames', {'Description', 'Count'});
     descripts_table = sortrows(descripts_table, 'Count', 'descend');
     descripts_table = descripts_table{:, 1};
-    disp(descripts_table);
+    % disp(descripts_table);
 end
 
 
@@ -289,7 +302,7 @@ function topic_table = process_topic(data)
     topic_table = table(keys(topic_count)', values(topic_count)', 'VariableNames', {'Topics', 'Count'});
     topic_table = sortrows(topic_table, 'Count', 'descend');
     topic_table = topic_table{:, 1};
-    disp(topic_table);
+    % disp(topic_table);
 end
 
 
