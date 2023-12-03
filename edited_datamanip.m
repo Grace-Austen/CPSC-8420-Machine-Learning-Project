@@ -7,7 +7,7 @@ default_fin = "data\test_repositories.csv";
 default_fout = "data\data.mat";
 
 addOptional(p, 'fin', default_fin, @mustBeFile);
-addOptional(p, 'fout', default_fout, @mustBeFile);
+addOptional(p, 'fout', default_fout, @mustBeText);
 
 parse(p, varargin{:});
 
@@ -59,7 +59,7 @@ columns_of_interest = [ "Name", "Description", "Homepage", "CreatedAt", "Updated
 % Update types for each column of interest
 data.Name = cellfun(@string, data.Name);
 disp("Finished updating name");
-data.Description = cellfun(@string, data.Description, UniformOutput=false);
+data.Description = cellfun(@string, data.Description);
 disp("Finished updating description");
 data.CreatedAt = cellfun(@(c)datetime(c, "InputFormat","uuuu-MM-dd'T'HH:mm:ssZ", TimeZone="UTC"), data.CreatedAt);
 disp("Finished updating createdat");
