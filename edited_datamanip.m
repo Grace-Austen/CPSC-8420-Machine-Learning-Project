@@ -91,6 +91,8 @@ disp("Finished updating hasdiscussions");
 
 disp("Finished updating types");
 
+save(comp("temp_%s", fout), "data", "-mat");
+
 % Parse out Topics
 data.Topics = arrayfun(@parse_tags, data.Topics, 'un', false);
 disp("Finished Parsing Topics");
