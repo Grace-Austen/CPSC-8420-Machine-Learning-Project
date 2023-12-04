@@ -49,11 +49,15 @@ if pca
     k_descript = p.Results.k_descript;
 end
 
+disp("Parsed input");
+
 % Training and testing with Lasso Regression
 %% Load Data
 load(name_data_file, '-mat', "one_hot_name", "name_features");
 load(descript_data_file, '-mat', "one_hot_descript", "descript_features");
 load(other_data_file, '-mat', "other_data", "indicator_data", "other_features", "indicator_features");
+
+disp("Loaded data");
 
 %% Data Processing
 % center everything by zscore
@@ -67,6 +71,7 @@ other_data_sd = std(other_data);
 one_hot_name = (one_hot_name - one_hot_name_mean)/one_hot_name_sd;
 one_hot_descript = (one_hot_descript - one_hot_descript_mean)/one_hot_descript_sd;
 other_data = (other_data - other_data_mean)/other_data_sd;
+
 
 % deal with PCA if req
 if pca
@@ -84,6 +89,8 @@ all_y = indicator_data;
 
 % split data
 [trainX, trainy, testX, testy] = split_data(X, all_y, train_percent, random_seed);
+
+disp("Processed data");
 
 %% Train
 results_table_columns = ["weights", "train_RMSE", "test_RMSE"];
@@ -108,6 +115,8 @@ else
     end
 end
 
+disp("Trained model(s)")
+
 if pca
     if ~strcmp(model, "linear")
         save(compose("%s_model_with_PCA_weights.mat", model), "model", "pca", "results_table", "trainX", "trainy", "testX", "testy", "-mat");
@@ -121,6 +130,8 @@ else
         save(compose("%s_model_weight.mat", model), "model", "pca", "results_table", "trainX", "trainy", "testX", "testy", "-mat");
     end
 end
+
+disp("Saved models")
 
 end
 
