@@ -56,10 +56,10 @@ else
             test_RMSEs(i) = results_table{i, 2}.test_MSE(feature);
         end
         % plot! finally!
-        loglog(lambdas, train_RMSEs,"DisplayName","Train RMSE","LineWidth", 1.5)
+        semilogx(lambdas, train_RMSEs,"DisplayName","Train RMSE","LineWidth", 1.5)
         hold on
         loglog(lambdas, test_RMSEs,"DisplayName","Test RMSE","LineWidth", 1.5)
-        title(strcat(indicator_features(feature), 'RMSE vs Lambda'))
+        title(strcat(indicator_features(feature), ' RMSE vs Lambda'))
         xlabel('Log Lambda')
         ylabel('RMSE')
         legend()
@@ -67,5 +67,11 @@ else
 end
 
 results_fig.Position = [0 0 1500 350];  
+
+if pca
+    saveas(results_fig, compose("figures/%s_model_with_PCA_results.png", model), 'png');
+else
+    saveas(results_fig, compose("figures/%s_model_PCA_results.png", model), 'png');
+end
 
 end
