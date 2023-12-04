@@ -167,7 +167,7 @@ else
     temp_data_split(l_temp_data) = compose("%s_descript", temp_data_split(l_temp_data));
 end
 descript_data_path = join(temp_data_split, ".");
-save(descript_data_path, "one_hot_descript", "descript_features", '-mat');
+save(descript_data_path, "one_hot_descript", "descript_features", '-mat', '-v7.3');
 
 % save(fout, "one_hot_name", "one_hot_descript", "other_data", "indicator_data", ...
 %     "name_features", "descript_features", "other_features", "indicator_features", '-mat');

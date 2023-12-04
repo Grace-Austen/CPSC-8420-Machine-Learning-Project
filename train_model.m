@@ -3,28 +3,39 @@ function []=train_model(varargin)
 p = inputParser;
 
 default_model = "linear";
-default_pca = false;
-default_data_file = "data\test_data.mat";
+default_pca = true;
 addOptional(p, 'model', default_model, @check_model);
 addOptional(p, 'pca', default_pca, @mustBeNumericOrLogical);
-addOptional(p, 'data_file', default_data_file, @mustBeText);
+
+default_name_data_file = "data\test_data_name.mat";
+default_descript_data_file = "data\test_data_descript.mat";
+default_other_file = "data\test_data_other.mat";
+addOptional(p, 'name_data_file', default_name_data_file, @mustBeFile);
+addOptional(p, 'descript_data_file', default_descript_data_file, @mustBeFile);
+addOptional(p, 'other_data_file', default_other_file, @mustBeFile);
 
 default_train_percent = 0.8;
 default_random_seed = 1;
+default_k_name = 50;
+default_k_descript = 100;
 addOptional(p, 'train_percent', default_train_percent, @real);
 addOptional(p, 'random_seed', default_random_seed, @isnumeric);
+addOptional(p, 'k_name', default_k_name, @isnumeric);
+addOptional(p, 'k_descript', default_k_descript, @isnumeric);
+
 
 default_lambdas = [0 logspace(-10, 10, 10)];
 default_lambda_train_thresh = 10e-5;
 addOptional(p, 'lambdas', default_lambdas, @isvector)
 addParameter(p, 'lambda_train_thresh', default_lambda_train_thresh, @isnumeric);
 
-
 parse(p, varargin{:});
 
 model = lower(p.Results.model);
 pca = p.Results.pca;
-data_file = p.Results.data_file;
+name_data_file = p.Results.name_data_file;
+descript_data_file = p.Results.descript_data_file;
+other_data_file = p.Results.other_data_file;
 train_percent = p.Results.train_percent;
 random_seed = p.Results.random_seed;
 
@@ -33,15 +44,35 @@ if ~strcmp(model, "linear")
     lambda_train_thresh = p.Results.lambda_train_thresh;
 end
 
+if pca
+    k_name = p.Results.k_name;
+    k_descript = p.Results.k_descript;
+end
+
 % Training and testing with Lasso Regression
 %% Load Data
-load(data_file, '-mat', "one_hot_name", "one_hot_descript", "other_data", "indicator_data", ...
-     "name_features", "descript_features", "other_features", "indicator_features");
+load(name_data_file, '-mat', "one_hot_name", "name_features");
+load(descript_data_file, '-mat', "one_hot_descript", "descript_features");
+load(other_data_file, '-mat', "other_data", "indicator_data", "other_features", "indicator_features");
 
 %% Data Processing
+% center everything by zscore
+one_hot_name_mean = mean(one_hot_name);
+one_hot_name_sd = std(one_hot_name);
+one_hot_descript_mean = mean(one_hot_descript);
+one_hot_descript_sd = std(one_hot_descript);
+other_data_mean = mean(other_data);
+other_data_sd = std(other_data);
+
+one_hot_name = (one_hot_name - one_hot_name_mean)/one_hot_name_sd;
+one_hot_descript = (one_hot_descript - one_hot_descript_mean)/one_hot_descript_sd;
+other_data = (other_data - other_data_mean)/other_data_sd;
+
 % deal with PCA if req
 if pca
     % apply pca to one_hot_name and one_hot descript
+    name = PCA(one_hot_name, k_name);
+    descript = PCA(one_hot_descript, k_descript);
 else
     name = one_hot_name;
     descript = one_hot_descript;
@@ -55,46 +86,41 @@ all_y = indicator_data;
 [trainX, trainy, testX, testy] = split_data(X, all_y, train_percent, random_seed);
 
 %% Train
+results_table_columns = ["weights", "train_RMSE", "test_RMSE"];
+results_table_variable_types = ["cell", "double", "double"];
+results_table_size = [length(indicator_features), length(results_table_columns)];
 if ~strcmp(model, "linear")
 % Regression or lasso model
-    lambda_results_table = cell(size(lambdas));
+    results_table = cell(size(lambdas));
     for i=1:length(lambdas)
-        lambda_results_table{i} = table('RowNames', indicator_features, 'VariableNames', ["weights", "train_RMSE", "test_RMSE"]);
+        results_table{i} = table('Size', results_table_size, 'RowNames', indicator_features, 'VariableNames', results_table_columns);
         for feature=1:length(indicator_features)
-            disp("Computing weights for ", indicator_features(feature), " with lambda ", lambdas(i));
-            lambda_results_table{i}.weights(feature) = eval(compose("%s(trainX, trainy(:,%d), %d, %f)", [model, feature, lambdas(i), lambda_train_thresh]));
+            disp(["Computing weights for ", indicator_features(feature), " with lambda ", lambdas(i)]);
+            results_table{i}.weights(feature) = eval(compose("%s(trainX, trainy(:,%d), %d, %f)", [model, feature, lambdas(i), lambda_train_thresh]));
         end
     end
 else
 % Linear
-    results_table = table('RowNames',indicator_features, 'VariableNames',["weights", "train_RMSE", "test_RMSE"]);
+    results_table = table('Size', results_table_size, 'RowNames',indicator_features, 'VariableTypes', results_table_variable_types, 'VariableNames', results_table_columns);
     for feature=1:length(indicator_features)
-        disp("Computing weights for ", indicator_features(feature));
-        results_table.weights(feature) = eval(compose("%s(trainX, trainy(:,%d))", [model, feature]));
+        disp(["Computing weights for " indicator_features(feature)]);
+        results_table.weights(feature) = {eval(compose("%s(trainX, trainy(:,%d))", model, feature))};
     end
 end
 
-%% Test
-if ~strcmp(model, "linear")
-% Regression or lasso model
-    for i=1:length(lambdas)
-        for feature=1:length(indicator_features)
-            disp("Computing train and test MSE for ", indicator_features(feature), " with lambda ", lambdas(i));
-            lambda_results_table{i}.train_MSE(feature) = rmse(trainX*lambda_results_table{i}.weights(feature), trainy(:,feature), "omitnan");
-            lambda_results_table{i}.test_MSE(feature) = rmse(testX*lambda_results_table{i}.weights(feature), testy(:,feature), "omitnan");
-        end
+if pca
+    if ~strcmp(model, "linear")
+        save(compose("%s_model_with_PCA_weights.mat", model), "model", "pca", "results_table", "trainX", "trainy", "testX", "testy", "-mat");
+    else
+        save(compose("%s_model_with_PCA_weight.mat", model), "model", "pca", "results_table", "trainX", "trainy", "testX", "testy", "-mat");
     end
 else
-% Linear
-    for feature=1:length(indicator_features)
-        disp("Computing train and test MSE for ", indicator_features(feature));
-        results_table.train_MSE(feature) = rmse(trainX*results_table.weights(feature), trainy(:,feature), "omitnan");
-        results_table.test_MSE(feature) = rmse(testX*results_table.weights(feature), testy(:,feature), "omitnan");
+    if ~strcmp(model, "linear")
+        save(compose("%s_model_weights.mat", model), "model", "pca", "results_table", "trainX", "trainy", "testX", "testy", "-mat");
+    else
+        save(compose("%s_model_weight.mat", model), "model", "pca", "results_table", "trainX", "trainy", "testX", "testy", "-mat");
     end
 end
-
-%% Plotting
-
 
 end
 
@@ -109,7 +135,7 @@ function TF = check_model(model)
 end
 
 %% Data Processing Functions
-function [trainX trainy testX testy] = split_data(X, y, varargin)
+function [trainX, trainy, testX, testy] = split_data(X, y, varargin)
     p = inputParser;
 
     default_train_percent = 0.8;
@@ -122,7 +148,7 @@ function [trainX trainy testX testy] = split_data(X, y, varargin)
 
     parse(p, X, y, varargin{:});
 
-    [rows cols] = size(p.Results.X);
+    [rows, ~] = size(p.Results.X);
     rng(abs(p.Results.random_seed), 'twister');
     perm = randperm(rows);
     
@@ -130,6 +156,15 @@ function [trainX trainy testX testy] = split_data(X, y, varargin)
     X_shuffle = p.Results.X(perm,:); y_shuffle = p.Results.y(perm,:);
     trainX = X_shuffle(1:end_train_index, :); testX = X_shuffle(end_train_index+1:end, :);
     trainy = y_shuffle(1:end_train_index, :); testy = y_shuffle(end_train_index+1:end, :);
+end
+
+function pca_X = PCA(X, k)
+    % Eigendecomp.
+    [~, S, V] = svds(X, k);
+    [~, indices] = sort(diag(S), 'descend');
+    V = V(:, indices);
+    
+    pca_X = X*V;
 end
 
 %% Model Training Functions
@@ -152,7 +187,7 @@ function weights = ridge(X, y, varargin)
     y = p.Results.y;
     lambda = p.Results.lambda;
 
-    [rows, cols] = size(X);
+    [rows, ~] = size(X);
     identity = eye(rows);
     weights = (A.'*A + (lambda*identity))\A'*y;
 end

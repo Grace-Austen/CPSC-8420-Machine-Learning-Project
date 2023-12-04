@@ -12,7 +12,7 @@ disp("Finished creating one hot of descriptions");
 
 descript_features = string(descripts_table);
 
-save(fout, "one_hot_descript", "descript_features", '-mat');
+save(fout, "one_hot_descript", "descript_features", '-mat', '-v7.3');
 
 
 % Process Description Column 
