@@ -18,8 +18,8 @@ if strcmp(model, "linear")
     for feature=1:num_features
         disp(strcat("Computing train and test MSE for ", indicator_features(feature)));
         weights = cell2mat(results_table.weights(feature));
-        results_table.train_MSE(feature) = rmse(trainX*weights, trainy(:,feature), "omitnan");
-        results_table.test_MSE(feature) = rmse(testX*weights, testy(:,feature), "omitnan");
+        results_table.train_MSE(feature) = rmse(trainX*weights, trainy(:,feature));
+        results_table.test_MSE(feature) = rmse(testX*weights, testy(:,feature));
     end
 else
     % Regression or lasso model
@@ -28,8 +28,8 @@ else
         for feature=1:num_features
             disp(compose("Computing train and test MSE for %s with lambda %d", indicator_features(feature), lambdas(i)));
             weights = cell2mat(results_table{i, 2}.weights(feature));
-            results_table{i, 2}.train_MSE(feature) = rmse(trainX*weights, trainy(:,feature), "omitnan");
-            results_table{i, 2}.test_MSE(feature) = rmse(testX*weights, testy(:,feature), "omitnan");
+            results_table{i, 2}.train_MSE(feature) = rmse(trainX*weights, trainy(:,feature));
+            results_table{i, 2}.test_MSE(feature) = rmse(testX*weights, testy(:,feature));
         end
     end
 end
@@ -74,4 +74,8 @@ else
     saveas(results_fig, compose("figures/%s_model_PCA_results.png", model), 'png');
 end
 
+end
+
+function err = rmse(a, b)
+    err = sqrt(mean((a-b).^2, "omitmissing"));
 end
