@@ -103,7 +103,11 @@ if ~strcmp(model, "linear")
         results_table{i} = table('Size', results_table_size, 'RowNames', indicator_features, 'VariableTypes', results_table_variable_types,'VariableNames', results_table_columns);
         for feature=1:length(indicator_features)
             disp(["Computing weights for ", indicator_features(feature), " with lambda ", lambdas(i)]);
-            results_table{i}.weights(feature) = eval(compose("%s(trainX, trainy(:,%d), %d, %f)", model, feature, lambdas(i), lasso_train_thresh));
+            if strcmp(model, "ridge")
+                results_table{i}.weights(feature) = {eval(compose("%s(trainX, trainy(:,%d), lambda=%d)", model, feature, lambdas(i)))};
+            else
+                results_table{i}.weights(feature) = {eval(compose("%s(trainX, trainy(:,%d), lambda=%d, threshold=%f)", model, feature, lambdas(i), lasso_train_thresh))};
+            end
         end
     end
 else
@@ -198,9 +202,9 @@ function weights = ridge(X, y, varargin)
     y = p.Results.y;
     lambda = p.Results.lambda;
 
-    [rows, ~] = size(X);
-    identity = eye(rows);
-    weights = (A.'*A + (lambda*identity))\A'*y;
+    [~, cols] = size(X);
+    identity = eye(cols);
+    weights = (X'*X + (lambda*identity))\X'*y;
 end
 
 function weights = lasso(X, y, varargin)
