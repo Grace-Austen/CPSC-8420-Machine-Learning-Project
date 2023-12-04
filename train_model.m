@@ -7,9 +7,9 @@ default_pca = true;
 addOptional(p, 'model', default_model, @check_model);
 addOptional(p, 'pca', default_pca, @mustBeNumericOrLogical);
 
-default_name_data_file = "data\test_data_name.mat";
-default_descript_data_file = "data\test_data_descript.mat";
-default_other_file = "data\test_data_other.mat";
+default_name_data_file = "data/test_data_name.mat";
+default_descript_data_file = "data/test_data_descript.mat";
+default_other_file = "data/test_data_other.mat";
 addOptional(p, 'name_data_file', default_name_data_file, @mustBeFile);
 addOptional(p, 'descript_data_file', default_descript_data_file, @mustBeFile);
 addOptional(p, 'other_data_file', default_other_file, @mustBeFile);
@@ -96,42 +96,43 @@ disp("Processed data");
 results_table_columns = ["weights", "train_RMSE", "test_RMSE"];
 results_table_variable_types = ["cell", "double", "double"];
 results_table_size = [length(indicator_features), length(results_table_columns)];
-if ~strcmp(model, "linear")
-% Regression or lasso model
-    results_table = cell(size(lambdas));
-    for i=1:length(lambdas)
-        results_table{i} = table('Size', results_table_size, 'RowNames', indicator_features, 'VariableTypes', results_table_variable_types,'VariableNames', results_table_columns);
-        for feature=1:length(indicator_features)
-            disp(["Computing weights for ", indicator_features(feature), " with lambda ", lambdas(i)]);
-            if strcmp(model, "ridge")
-                results_table{i}.weights(feature) = {eval(compose("%s(trainX, trainy(:,%d), lambda=%d)", model, feature, lambdas(i)))};
-            else
-                results_table{i}.weights(feature) = {eval(compose("%s(trainX, trainy(:,%d), lambda=%d, threshold=%f)", model, feature, lambdas(i), lasso_train_thresh))};
-            end
-        end
-    end
-else
+if strcmp(model, "linear")
 % Linear
     results_table = table('Size', results_table_size, 'RowNames',indicator_features, 'VariableTypes', results_table_variable_types, 'VariableNames', results_table_columns);
     for feature=1:length(indicator_features)
         disp(["Computing weights for " indicator_features(feature)]);
         results_table.weights(feature) = {eval(compose("%s(trainX, trainy(:,%d))", model, feature))};
     end
+else
+% Regression or lasso model
+    results_table = cell(size(lambdas'));
+    for i=1:length(lambdas)
+        results_table{i, 1} = table('Size', results_table_size, 'RowNames', indicator_features, 'VariableTypes', results_table_variable_types,'VariableNames', results_table_columns);
+        for feature=1:length(indicator_features)
+            disp(["Computing weights for ", indicator_features(feature), " with lambda ", lambdas(i)]);
+            if strcmp(model, "ridge")
+                results_table{i, 1}.weights(feature) = {eval(compose("%s(trainX, trainy(:,%d), lambda=%d)", model, feature, lambdas(i)))};
+            else
+                results_table{i, 1}.weights(feature) = {eval(compose("%s(trainX, trainy(:,%d), lambda=%d, threshold=%f)", model, feature, lambdas(i), lasso_train_thresh))};
+            end
+        end
+    end
+    results_table = [num2cell(lambdas') results_table];
 end
 
 disp("Trained model(s)")
 
 if pca
-    if ~strcmp(model, "linear")
-        save(compose("%s_model_with_PCA_weights.mat", model), "model", "pca", "results_table", "trainX", "trainy", "testX", "testy", "-mat");
+    if strcmp(model, "linear")
+        save(compose("models/%s_model_with_PCA_weight.mat", model), "model", "pca", "results_table", "trainX", "trainy", "testX", "testy", "indicator_features", "-mat");
     else
-        save(compose("%s_model_with_PCA_weight.mat", model), "model", "pca", "results_table", "trainX", "trainy", "testX", "testy", "-mat");
+        save(compose("models/%s_model_with_PCA_weights.mat", model), "model", "pca", "results_table", "trainX", "trainy", "testX", "testy", "indicator_features", "-mat");
     end
 else
-    if ~strcmp(model, "linear")
-        save(compose("%s_model_weights.mat", model), "model", "pca", "results_table", "trainX", "trainy", "testX", "testy", "-mat");
+    if strcmp(model, "linear")
+            save(compose("models/%s_model_weight.mat", model), "model", "pca", "results_table", "trainX", "trainy", "testX", "testy", "indicator_features", "-mat");
     else
-        save(compose("%s_model_weight.mat", model), "model", "pca", "results_table", "trainX", "trainy", "testX", "testy", "-mat");
+        save(compose("models/%s_model_weights.mat", model), "model", "pca", "results_table", "trainX", "trainy", "testX", "testy", "indicator_features", "-mat");
     end
 end
 

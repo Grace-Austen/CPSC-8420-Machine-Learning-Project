@@ -1,53 +1,71 @@
-function []=test_model(model_data_file, varargin)
+function []=test_model(model_data_file)
 % Parse args
 p = inputParser;
-addRequired(model_data_file, @mustBeFile)
+addRequired(p, "model_data_file", @mustBeFile)
 
-parse(p, model_data_file, varargin{:});
+parse(p, model_data_file);
 
 model_data_file = p.Results.model_data_file;
 
-load(model_data_file, "-mat", "model", "pca", "results_table", "trainX", "trainy", "testX", "testy");
+load(model_data_file, "-mat", "model", "pca", "results_table", "trainX", "trainy", "testX", "testy", "indicator_features");
+
+num_features = length(indicator_features);
 
 %% Test
-if ~strcmp(model, "linear")
-% Regression or lasso model
-    for i=1:length(lambdas)
-        for feature=1:length(indicator_features)
-            disp("Computing train and test MSE for ", indicator_features(feature), " with lambda ", lambdas(i));
-            results_table{i}.train_MSE(feature) = rmse(trainX*results_table{i}.weights(feature), trainy(:,feature), "omitnan");
-            results_table{i}.test_MSE(feature) = rmse(testX*results_table{i}.weights(feature), testy(:,feature), "omitnan");
-        end
+disp("Testing models");
+if strcmp(model, "linear")
+    % Linear
+    for feature=1:num_features
+        disp(strcat("Computing train and test MSE for ", indicator_features(feature)));
+        weights = cell2mat(results_table.weights(feature));
+        results_table.train_MSE(feature) = rmse(trainX*weights, trainy(:,feature), "omitnan");
+        results_table.test_MSE(feature) = rmse(testX*weights, testy(:,feature), "omitnan");
     end
 else
-% Linear
-    for feature=1:length(indicator_features)
-        disp("Computing train and test MSE for ", indicator_features(feature));
-        results_table.train_MSE(feature) = rmse(trainX*results_table.weights(feature), trainy(:,feature), "omitnan");
-        results_table.test_MSE(feature) = rmse(testX*results_table.weights(feature), testy(:,feature), "omitnan");
+    % Regression or lasso model
+    lambdas = cell2mat(results_table(:,1))';
+    for i=1:length(lambdas)
+        for feature=1:num_features
+            disp(compose("Computing train and test MSE for %s with lambda %d", indicator_features(feature), lambdas(i)));
+            weights = cell2mat(results_table{i, 2}.weights(feature));
+            results_table{i, 2}.train_MSE(feature) = rmse(trainX*weights, trainy(:,feature), "omitnan");
+            results_table{i, 2}.test_MSE(feature) = rmse(testX*weights, testy(:,feature), "omitnan");
+        end
     end
 end
 
 %% Plotting
-if ~strcmp(model, "linear")
-% Regression or lasso model
-    for i=1:length(lambdas)
-        for feature=1:length(indicator_features)
-            disp("Computing train and test MSE for ", indicator_features(feature), " with lambda ", lambdas(i));
-            lambda_results_table{i}.train_MSE(feature) = rmse(trainX*lambda_results_table{i}.weights(feature), trainy(:,feature), "omitnan");
-            lambda_results_table{i}.test_MSE(feature) = rmse(testX*lambda_results_table{i}.weights(feature), testy(:,feature), "omitnan");
-        end
+disp("Plotting results");
+results_fig = figure;
+if strcmp(model, "linear")
+    % Linear
+    for feature=1:num_features
+        subplot(1, num_features, feature)
+        bar(["Train", "Test"], [results_table.train_MSE(feature), results_table.test_MSE(feature)]);
+        title(strcat(indicator_features(feature), " RMSE"));
     end
 else
-% Linear
-    indicator_features = results_table.
-    for feature=1:length(indicator_features)
-        disp(["Computing train and test MSE for " indicator_features(feature)]);
-        results_table.train_MSE(feature) = rmse(trainX*results_table.weights(feature), trainy(:,feature), "omitnan");
-        results_table.test_MSE(feature) = rmse(testX*results_table.weights(feature), testy(:,feature), "omitnan");
+    % Regression or lasso model
+    for feature=1:num_features
+        subplot(1, num_features, feature)
+        % extract RMSE
+        train_RMSEs = zeros(size(lambdas));
+        test_RMSEs = zeros(size(lambdas));
+        for i=1:length(lambdas)
+            train_RMSEs(i) = results_table{i, 2}.train_MSE(feature);
+            test_RMSEs(i) = results_table{i, 2}.test_MSE(feature);
+        end
+        % plot! finally!
+        loglog(lambdas, train_RMSEs,"DisplayName","Train RMSE","LineWidth", 1.5)
+        hold on
+        loglog(lambdas, test_RMSEs,"DisplayName","Test RMSE","LineWidth", 1.5)
+        title(strcat(indicator_features(feature), 'RMSE vs Lambda'))
+        xlabel('Log Lambda')
+        ylabel('RMSE')
+        legend()
     end
 end
 
-
+results_fig.Position = [0 0 1500 350];  
 
 end
