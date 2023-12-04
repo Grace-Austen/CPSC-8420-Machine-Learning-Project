@@ -1,8 +1,8 @@
 #!/bin/bash -i
 #
 #PBS -N train_no_pca_models
-#PBS -q gpu_small_p100
-#PBS -l select=1:ncpus=24:mem=46gb:interconnect=1g
+#PBS -q work1
+#PBS -l select=1:ncpus=24:mpiprocs=24:mem=46gb:ngpus=1
 #PBS -l walltime=12:00:00
 #PBS -o train_no_pca_models.txt
 #PBS -j oe
