@@ -100,7 +100,7 @@ if ~strcmp(model, "linear")
 % Regression or lasso model
     results_table = cell(size(lambdas));
     for i=1:length(lambdas)
-        results_table{i} = table('Size', results_table_size, 'RowNames', indicator_features, 'VariableNames', results_table_columns);
+        results_table{i} = table('Size', results_table_size, 'RowNames', indicator_features, 'VariableTypes', results_table_variable_types,'VariableNames', results_table_columns);
         for feature=1:length(indicator_features)
             disp(["Computing weights for ", indicator_features(feature), " with lambda ", lambdas(i)]);
             results_table{i}.weights(feature) = eval(compose("%s(trainX, trainy(:,%d), %d, %f)", [model, feature, lambdas(i), lasso_train_thresh]));
