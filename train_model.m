@@ -25,9 +25,9 @@ addOptional(p, 'k_descript', default_k_descript, @isnumeric);
 
 
 default_lambdas = [0 logspace(-10, 10, 10)];
-default_lambda_train_thresh = 10e-5;
+default_lasso_train_thresh = 10e-5;
 addOptional(p, 'lambdas', default_lambdas, @isvector)
-addParameter(p, 'lambda_train_thresh', default_lambda_train_thresh, @isnumeric);
+addParameter(p, 'lasso_train_thresh', default_lasso_train_thresh, @isnumeric);
 
 parse(p, varargin{:});
 
@@ -41,7 +41,7 @@ random_seed = p.Results.random_seed;
 
 if ~strcmp(model, "linear")
     lambdas = p.Results.lambdas;
-    lambda_train_thresh = p.Results.lambda_train_thresh;
+    lasso_train_thresh = p.Results.lasso_train_thresh;
 end
 
 if pca
@@ -96,7 +96,7 @@ if ~strcmp(model, "linear")
         results_table{i} = table('Size', results_table_size, 'RowNames', indicator_features, 'VariableNames', results_table_columns);
         for feature=1:length(indicator_features)
             disp(["Computing weights for ", indicator_features(feature), " with lambda ", lambdas(i)]);
-            results_table{i}.weights(feature) = eval(compose("%s(trainX, trainy(:,%d), %d, %f)", [model, feature, lambdas(i), lambda_train_thresh]));
+            results_table{i}.weights(feature) = eval(compose("%s(trainX, trainy(:,%d), %d, %f)", [model, feature, lambdas(i), lasso_train_thresh]));
         end
     end
 else
