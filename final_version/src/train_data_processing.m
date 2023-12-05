@@ -103,3 +103,44 @@ end
 disp("Processed data");
 
 end
+
+%% Data Processing Functions
+function [train_name, train_descript, train_other, trainy, test_name, test_descript, test_other, testy] = split_data(name, descript, other, y, varargin)
+    p = inputParser;
+
+    default_train_percent = 0.8;
+    default_random_seed = 1;
+
+    addRequired(p, 'name', @ismatrix);
+    addRequired(p, 'descript', @ismatrix);
+    addRequired(p, 'other', @ismatrix);
+    addRequired(p, 'y', @ismatrix);
+    addOptional(p, 'train_percent', default_train_percent, @real);
+    addOptional(p, 'random_seed', default_random_seed, @isnumeric);
+
+    parse(p, name, descript, other, y, varargin{:});
+
+    [rows, ~] = size(p.Results.y);
+    rng(abs(p.Results.random_seed), 'twister');
+    perm = randperm(rows);
+    
+    end_train_index = rows*p.Results.train_percent;
+    name_shuffle = p.Results.name(perm,:);
+    descript_shuffle = p.Results.descript(perm,:);
+    other_shuffle = p.Results.other(perm,:);
+    y_shuffle = p.Results.y(perm,:);
+    
+    train_name = name_shuffle(1:end_train_index, :); test_name = name_shuffle(end_train_index+1:end, :);
+    train_descript = descript_shuffle(1:end_train_index, :); test_descript = descript_shuffle(end_train_index+1:end, :);
+    train_other = other_shuffle(1:end_train_index, :); test_other = other_shuffle(end_train_index+1:end, :);
+    trainy = y_shuffle(1:end_train_index, :); testy = y_shuffle(end_train_index+1:end, :);
+end
+
+function pca_weights = PCA(X, k)
+    % Eigendecomp.
+    [~, S, V] = svds(X, k);
+    [~, indices] = sort(diag(S), 'descend');
+    V = V(:, indices);
+    
+    pca_weights = V;
+end
