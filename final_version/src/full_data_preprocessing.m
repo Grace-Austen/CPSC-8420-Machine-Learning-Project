@@ -3,8 +3,8 @@ function []=full_data_preprocessing(varargin)
 % Parse args
 p = inputParser;
 
-default_fin = "data/1k_repositories.csv";
-default_fout = "processed_data/1k_data.mat";
+default_fin = "../data/1k_repositories.csv";
+default_fout = "../processed_data/1k_data.mat";
 
 addOptional(p, 'fin', default_fin, @mustBeFile);
 addOptional(p, 'fout', default_fout, @mustBeText);

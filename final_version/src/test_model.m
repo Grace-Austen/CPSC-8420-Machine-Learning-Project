@@ -69,9 +69,9 @@ end
 results_fig.Position = [0 0 1500 350];  
 
 if pca
-    saveas(results_fig, compose("figures/results/%s_model_with_PCA_results.png", model), 'png');
+    saveas(results_fig, compose("../figures/results/%s_model_with_PCA_results.png", model), 'png');
 else
-    saveas(results_fig, compose("figures/results/%s_model_results.png", model), 'png');
+    saveas(results_fig, compose("../figures/results/%s_model_results.png", model), 'png');
 end
 
 end

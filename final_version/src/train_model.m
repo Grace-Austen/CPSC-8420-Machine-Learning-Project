@@ -7,7 +7,7 @@ default_pca = true;
 addOptional(p, 'model', default_model, @check_model);
 addOptional(p, 'pca', default_pca, @mustBeNumericOrLogical);
 
-default_data_file = "processed_data/1k_train-test_data.mat";
+default_data_file = "../processed_data/1k_train-test_data.mat";
 addOptional(p, 'data_file', default_data_file, @mustBeFile);
 
 default_lambdas = [0 logspace(-10, 10, 10)];
@@ -73,13 +73,13 @@ disp("Trained model(s)")
 
 if pca
     if strcmp(model, "linear")
-        save(compose("models/%s_model_with_PCA_weight.mat", model), ...
+        save(compose("../models/%s_model_with_PCA_weight.mat", model), ...
             "model", "pca", "results_table", ...
             "trainX", "trainy", "testX", "testy", "indicator_features", ...
             "name_features", "descript_features", "other_features", "indicator_features", ...
             "name_weights", "descript_weights", "-mat");
     else
-        save(compose("models/%s_model_with_PCA_weights.mat", model), ...
+        save(compose("../models/%s_model_with_PCA_weights.mat", model), ...
             "model", "pca", "results_table", ...
             "trainX", "trainy", "testX", "testy", "indicator_features", ...
             "name_features", "descript_features", "other_features", "indicator_features", ...
@@ -87,12 +87,12 @@ if pca
     end
 else
     if strcmp(model, "linear")
-        save(compose("models/%s_model_weight.mat", model), ...
+        save(compose("../models/%s_model_weight.mat", model), ...
             "model", "pca", "results_table", ...
             "trainX", "trainy", "testX", "testy", "indicator_features", ...
             "name_features", "descript_features", "other_features", "indicator_features", "-mat");
     else
-        save(compose("models/%s_model_weights.mat", model), ...
+        save(compose("../models/%s_model_weights.mat", model), ...
             "model", "pca", "results_table", ...
             "trainX", "trainy", "testX", "testy", "indicator_features", ...
             "name_features", "descript_features", "other_features", "indicator_features", "-mat");
@@ -111,47 +111,6 @@ function TF = check_model(model)
        error('Model must be one of the following: linear, ridge, lasso, PCA');
     end
 
-end
-
-%% Data Processing Functions
-function [train_name, train_descript, train_other, trainy, test_name, test_descript, test_other, testy] = split_data(name, descript, other, y, varargin)
-    p = inputParser;
-
-    default_train_percent = 0.8;
-    default_random_seed = 1;
-
-    addRequired(p, 'name', @ismatrix);
-    addRequired(p, 'descript', @ismatrix);
-    addRequired(p, 'other', @ismatrix);
-    addRequired(p, 'y', @ismatrix);
-    addOptional(p, 'train_percent', default_train_percent, @real);
-    addOptional(p, 'random_seed', default_random_seed, @isnumeric);
-
-    parse(p, name, descript, other, y, varargin{:});
-
-    [rows, ~] = size(p.Results.y);
-    rng(abs(p.Results.random_seed), 'twister');
-    perm = randperm(rows);
-    
-    end_train_index = rows*p.Results.train_percent;
-    name_shuffle = p.Results.name(perm,:);
-    descript_shuffle = p.Results.descript(perm,:);
-    other_shuffle = p.Results.other(perm,:);
-    y_shuffle = p.Results.y(perm,:);
-    
-    train_name = name_shuffle(1:end_train_index, :); test_name = name_shuffle(end_train_index+1:end, :);
-    train_descript = descript_shuffle(1:end_train_index, :); test_descript = descript_shuffle(end_train_index+1:end, :);
-    train_other = other_shuffle(1:end_train_index, :); test_other = other_shuffle(end_train_index+1:end, :);
-    trainy = y_shuffle(1:end_train_index, :); testy = y_shuffle(end_train_index+1:end, :);
-end
-
-function pca_weights = PCA(X, k)
-    % Eigendecomp.
-    [~, S, V] = svds(X, k);
-    [~, indices] = sort(diag(S), 'descend');
-    V = V(:, indices);
-    
-    pca_weights = V;
 end
 
 %% Model Training Functions
