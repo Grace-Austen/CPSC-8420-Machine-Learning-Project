@@ -1,4 +1,4 @@
-function scores = pca_noRegression(X)
+function pca_noRegression(X)
     % X = X(:, 1:10)
     % mu = mean(X);
     % X_cent = X - mu;
@@ -19,7 +19,7 @@ function scores = pca_noRegression(X)
     exp_var = cumsum(var);
     
     % Scree Plot
-    plot(1:length(exp_var),(var), 'o-', 'LineWidth', 1);
+    plot(1:length(exp_var),(var), 'o-', 'LineWidth', 1, 'MarkerSize', 5);
     title('Scree Plot');
     xlabel('Principal Component');
     ylabel('Proportion of Explained Variance');
