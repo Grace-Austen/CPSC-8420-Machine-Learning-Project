@@ -8,16 +8,16 @@ name_pca = openfig("1k_name_pca.fig");
 % descript_pca.Children.Children(1)
 % descript_pca.Children.Children(2)
 desc_cum = descript_pca.Children.Children(1);
-% desc_cum.YData(600:650)
-desc_cum.YData(610)
+% desc_cum.YData(400:450)
+desc_cum.YData(431:432)
 
 "Name"
 % name_pca.Children.Children(1)
 % name_pca.Children.Children(2)
 name_cum = name_pca.Children.Children(1);
 
-% name_cum.YData(450:500)
-name_cum.YData(461)
+% name_cum.YData(150:200)
+name_cum.YData(170:171)
 
 
 % fig = openfig("pca_figures\descript_pca_scree_50k.fig")
