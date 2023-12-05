@@ -76,9 +76,9 @@ descript_sd = std(train_descript);
 other_data_mean = mean(train_other_data);
 other_data_sd = std(train_other_data);
 
-train_name = (train_name - name_mean)/name_sd;
-train_descript = (train_descript - descript_mean)/descript_sd;
-train_other_data = (train_other_data - other_data_mean)/other_data_sd;
+train_name = (train_name - name_mean)/name_sd
+train_descript = (train_descript - descript_mean)/descript_sd
+train_other_data = (train_other_data - other_data_mean)/other_data_sd
 
 test_name = (test_name - name_mean)/name_sd;
 test_descript = (test_descript - descript_mean)/descript_sd;
@@ -186,8 +186,8 @@ function [train_name, train_descript, train_other, trainy, test_name, test_descr
     y_shuffle = p.Results.y(perm,:);
     
     train_name = name_shuffle(1:end_train_index, :); test_name = name_shuffle(end_train_index+1:end, :);
-    train_descript = name_shuffle(1:end_train_index, :); test_descript = name_shuffle(end_train_index+1:end, :);
-    train_other = name_shuffle(1:end_train_index, :); test_other = name_shuffle(end_train_index+1:end, :);
+    train_descript = descript_shuffle(1:end_train_index, :); test_descript = descript_shuffle(end_train_index+1:end, :);
+    train_other = other_shuffle(1:end_train_index, :); test_other = other_shuffle(end_train_index+1:end, :);
     trainy = y_shuffle(1:end_train_index, :); testy = y_shuffle(end_train_index+1:end, :);
 end
 
