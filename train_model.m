@@ -60,35 +60,44 @@ load(other_data_file, '-mat', "other_data", "indicator_data", "other_features", 
 disp("Loaded data");
 
 %% Data Processing
-% center everything by zscore
-one_hot_name_mean = mean(one_hot_name);
-one_hot_name_sd = std(one_hot_name);
-one_hot_descript_mean = mean(one_hot_descript);
-one_hot_descript_sd = std(one_hot_descript);
-other_data_mean = mean(other_data);
-other_data_sd = std(other_data);
+% rename and put together all data
+% X = [name descript other_data];
+all_y = indicator_data;
 
-one_hot_name = (one_hot_name - one_hot_name_mean)/one_hot_name_sd;
-one_hot_descript = (one_hot_descript - one_hot_descript_mean)/one_hot_descript_sd;
-other_data = (other_data - other_data_mean)/other_data_sd;
+% split data
+[train_name, train_descript, train_other_data, trainy, ...
+    test_name, test_descript, test_other_data, testy] = split_data(one_hot_name, one_hot_descript, other_data, all_y, train_percent, random_seed);
+
+% center everything by zscore
+name_mean = mean(train_name);
+name_sd = std(train_name);
+descript_mean = mean(train_descript);
+descript_sd = std(train_descript);
+other_data_mean = mean(train_other_data);
+other_data_sd = std(train_other_data);
+
+train_name = (train_name - name_mean)/name_sd;
+train_descript = (train_descript - descript_mean)/descript_sd;
+train_other_data = (train_other_data - other_data_mean)/other_data_sd;
+
+test_name = (test_name - name_mean)/name_sd;
+test_descript = (test_descript - descript_mean)/descript_sd;
+test_other_data = (test_other_data - other_data_mean)/other_data_sd;
 
 
 % deal with PCA if req
 if pca
     % apply pca to one_hot_name and one_hot descript
-    name = PCA(one_hot_name, k_name);
-    descript = PCA(one_hot_descript, k_descript);
-else
-    name = one_hot_name;
-    descript = one_hot_descript;
+    name_weights = PCA(train_name, k_name);
+    descript_weights = PCA(train_descript, k_descript);
+    train_name = train_name*name_weights;
+    train_descript = train_descript*descript_weights;
+    test_name = test_name*name_weights;
+    test_descript = test_descript*descript_weights;
 end
 
-% rename and put together all data
-X = [name descript other_data];
-all_y = indicator_data;
-
-% split data
-[trainX, trainy, testX, testy] = split_data(X, all_y, train_percent, random_seed);
+trainX = [train_name train_descript train_other_data];
+testX = [test_name test_descript test_other_data];
 
 disp("Processed data");
 
@@ -151,36 +160,44 @@ function TF = check_model(model)
 end
 
 %% Data Processing Functions
-function [trainX, trainy, testX, testy] = split_data(X, y, varargin)
+function [train_name, train_descript, train_other, trainy, test_name, test_descript, test_other, testy] = split_data(name, descript, other, y, varargin)
     p = inputParser;
 
     default_train_percent = 0.8;
     default_random_seed = 1;
 
-    addRequired(p, 'X', @ismatrix);
+    addRequired(p, 'name', @ismatrix);
+    addRequired(p, 'descript', @ismatrix);
+    addRequired(p, 'other', @ismatrix);
     addRequired(p, 'y', @ismatrix);
     addOptional(p, 'train_percent', default_train_percent, @real);
     addOptional(p, 'random_seed', default_random_seed, @isnumeric);
 
-    parse(p, X, y, varargin{:});
+    parse(p, name, descript, other, y, varargin{:});
 
-    [rows, ~] = size(p.Results.X);
+    [rows, ~] = size(p.Results.y);
     rng(abs(p.Results.random_seed), 'twister');
     perm = randperm(rows);
     
     end_train_index = rows*p.Results.train_percent;
-    X_shuffle = p.Results.X(perm,:); y_shuffle = p.Results.y(perm,:);
-    trainX = X_shuffle(1:end_train_index, :); testX = X_shuffle(end_train_index+1:end, :);
+    name_shuffle = p.Results.name(perm,:);
+    descript_shuffle = p.Results.descript(perm,:);
+    other_shuffle = p.Results.other(perm,:);
+    y_shuffle = p.Results.y(perm,:);
+    
+    train_name = name_shuffle(1:end_train_index, :); test_name = name_shuffle(end_train_index+1:end, :);
+    train_descript = name_shuffle(1:end_train_index, :); test_descript = name_shuffle(end_train_index+1:end, :);
+    train_other = name_shuffle(1:end_train_index, :); test_other = name_shuffle(end_train_index+1:end, :);
     trainy = y_shuffle(1:end_train_index, :); testy = y_shuffle(end_train_index+1:end, :);
 end
 
-function pca_X = PCA(X, k)
+function pca_weights = PCA(X, k)
     % Eigendecomp.
     [~, S, V] = svds(X, k);
     [~, indices] = sort(diag(S), 'descend');
     V = V(:, indices);
     
-    pca_X = X*V;
+    pca_weights = V;
 end
 
 %% Model Training Functions
