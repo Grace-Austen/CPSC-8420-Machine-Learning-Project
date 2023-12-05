@@ -60,10 +60,13 @@ disp("Done split data")
 % center everything by zscore
 name_mean = mean(train_name, "omitnan");
 name_sd = std(train_name, "omitnan");
+name_sd(name_sd==0) = 1e-6;
 descript_mean = mean(train_descript, "omitnan");
-descript_sd = std(train_descript, "omitnan")+1e-6;
+descript_sd = std(train_descript, "omitnan");
+descript_sd(descript_sd==0) = 1e-6;
 other_data_mean = mean(train_other_data, "omitnan");
 other_data_sd = std(train_other_data, "omitnan");
+other_data_sd(other_data_sd==0) = 1e-6;
 
 train_name = (train_name - name_mean)./name_sd;
 train_descript = (train_descript - descript_mean)./descript_sd;
