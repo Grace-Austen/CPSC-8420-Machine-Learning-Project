@@ -16,13 +16,12 @@ addOptional(p, 'other_data_file', default_other_file, @mustBeFile);
 
 default_train_percent = 0.8;
 default_random_seed = 1;
-default_k_name = 50;
-default_k_descript = 100;
+default_k_name = 171;
+default_k_descript = 13499;
 addOptional(p, 'train_percent', default_train_percent, @real);
 addOptional(p, 'random_seed', default_random_seed, @isnumeric);
 addOptional(p, 'k_name', default_k_name, @isnumeric);
 addOptional(p, 'k_descript', default_k_descript, @isnumeric);
-
 
 default_lambdas = [0 logspace(-10, 10, 10)];
 default_lasso_train_thresh = 10e-5;
@@ -76,13 +75,13 @@ descript_sd = std(train_descript);
 other_data_mean = mean(train_other_data);
 other_data_sd = std(train_other_data);
 
-train_name = (train_name - name_mean)/name_sd
-train_descript = (train_descript - descript_mean)/descript_sd
-train_other_data = (train_other_data - other_data_mean)/other_data_sd
+train_name = (train_name - name_mean)./name_sd;
+train_descript = (train_descript - descript_mean)./descript_sd;
+train_other_data = (train_other_data - other_data_mean)./other_data_sd;
 
-test_name = (test_name - name_mean)/name_sd;
-test_descript = (test_descript - descript_mean)/descript_sd;
-test_other_data = (test_other_data - other_data_mean)/other_data_sd;
+test_name = (test_name - name_mean)./name_sd;
+test_descript = (test_descript - descript_mean)./descript_sd;
+test_other_data = (test_other_data - other_data_mean)./other_data_sd;
 
 
 % deal with PCA if req
@@ -98,6 +97,9 @@ end
 
 trainX = [train_name train_descript train_other_data];
 testX = [test_name test_descript test_other_data];
+
+size(trainX)
+size(testX)
 
 disp("Processed data");
 
