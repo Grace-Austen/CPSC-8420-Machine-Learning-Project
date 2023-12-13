@@ -10,7 +10,7 @@ model_data_file = p.Results.model_data_file;
 load(model_data_file, "-mat", "model", "pca", "results_table", "trainX", "trainy", "testX", "testy", "indicator_features");
 
 num_features = length(indicator_features);
-
+% load("../models/linear_model_with_PCA_weight.mat")
 %% Test
 disp("Testing models");
 if strcmp(model, "linear")
@@ -69,9 +69,9 @@ end
 results_fig.Position = [0 0 1500 350];  
 
 if pca
-    saveas(results_fig, compose("../figures/results/%s_model_with_PCA_results.png", model), 'png');
+    saveas(results_fig, compose("../figures/results/%s_model_with_PCA_results.fig", model), 'fig');
 else
-    saveas(results_fig, compose("../figures/results/%s_model_results.png", model), 'png');
+    saveas(results_fig, compose("../figures/results/%s_model_results.fig", model), 'fig');
 end
 
 end
